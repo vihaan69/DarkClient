@@ -1,29 +1,32 @@
 """
-This script downloads the Minecraft client mappings for the latest stable version,
+This script downloads the Minecraft client mappings for a user-selected stable version,
 converts them into a custom JSON format, and saves the output to 'mappings.json'.
 """
 import re
 import json
 import requests
 
-def get_latest_minecraft_version():
+def get_all_release_versions():
     """
-    Retrieves the latest stable Minecraft version number from the Mojang version manifest.
+    Retrieves a list of all stable (release) Minecraft versions from the Mojang version manifest.
 
     Returns:
-        str: The latest stable version number, or None if an error occurs.
+        list: A list of version strings, sorted from newest to oldest, or None if an error occurs.
     """
     try:
         print("Fetching Minecraft version manifest...")
         response = requests.get("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", timeout=10)
         response.raise_for_status()  # Raise an exception for bad HTTP responses
         manifest = response.json()
-        latest_version = manifest.get("latest", {}).get("release")
-        if latest_version:
-            print(f"Latest stable version found: {latest_version}")
-            return latest_version
+
+        # Filter for release versions and extract their IDs
+        release_versions = [v['id'] for v in manifest.get('versions', []) if v.get('type') == 'release']
+
+        if release_versions:
+            print(f"Found {len(release_versions)} stable versions.")
+            return release_versions
         else:
-            print("Error: Could not find the latest stable version in the manifest.")
+            print("Error: Could not find any stable versions in the manifest.")
             return None
     except requests.exceptions.RequestException as e:
         print(f"Error while fetching the version manifest: {e}")
@@ -31,6 +34,62 @@ def get_latest_minecraft_version():
     except json.JSONDecodeError:
         print("Error: Failed to decode JSON response from Mojang's server.")
         return None
+
+def present_version_menu(versions):
+    """
+    Displays an interactive menu for the user to select a Minecraft version.
+
+    Args:
+        versions (list): A list of version strings to display.
+
+    Returns:
+        str: The version string selected by the user, or None if they quit.
+    """
+    displayed_count = 0
+    page_size = 10
+
+    while True:
+        # Determine the slice of versions to display for the current page
+        end_index = displayed_count + page_size
+        current_page_versions = versions[displayed_count:end_index]
+
+        print("\nPlease select a Minecraft version:")
+        print("-" * 30)
+
+        for i, version in enumerate(current_page_versions, start=1):
+            print(f"  {displayed_count + i}. {version}")
+
+        print("-" * 30)
+
+        options = []
+        # Option to show more versions if available
+        if end_index < len(versions):
+            options.append("[m] Show more...")
+
+        options.append("[q] Quit")
+        print(" / ".join(options))
+
+        choice = input("Enter your choice (number, 'm', or 'q'): ").lower().strip()
+
+        if choice == 'q':
+            return None
+        elif choice == 'm' and end_index < len(versions):
+            displayed_count = end_index
+            continue
+        elif choice.isdigit():
+            try:
+                selection_index = int(choice) - 1
+                if 0 <= selection_index < len(versions):
+                    selected_version = versions[selection_index]
+                    print(f"You selected: {selected_version}")
+                    return selected_version
+                else:
+                    print("Invalid number. Please try again.")
+            except ValueError:
+                print("Invalid input. Please enter a number from the list, 'm', or 'q'.")
+        else:
+            print("Invalid input. Please try again.")
+
 
 def download_client_mappings(version):
     """
@@ -48,9 +107,9 @@ def download_client_mappings(version):
         response = requests.get("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json", timeout=10)
         response.raise_for_status()
         manifest = response.json()
-        
+
         version_info_url = next((v['url'] for v in manifest['versions'] if v['id'] == version), None)
-        
+
         if not version_info_url:
             print(f"Error: Could not find the information URL for version {version}.")
             return None
@@ -61,7 +120,7 @@ def download_client_mappings(version):
         version_info = version_info_response.json()
 
         mappings_url = version_info.get("downloads", {}).get("client_mappings", {}).get("url")
-        
+
         if not mappings_url:
             print(f"Error: Could not find the mappings URL for version {version}.")
             return None
@@ -171,11 +230,16 @@ def main():
     """
     Main function that orchestrates the download, parsing, and saving of mappings.
     """
-    latest_version = get_latest_minecraft_version()
-    if not latest_version:
+    release_versions = get_all_release_versions()
+    if not release_versions:
         return
 
-    mappings_text = download_client_mappings(latest_version)
+    selected_version = present_version_menu(release_versions)
+    if not selected_version:
+        print("No version selected. Exiting.")
+        return
+
+    mappings_text = download_client_mappings(selected_version)
     if not mappings_text:
         return
 
@@ -188,7 +252,7 @@ def main():
         with open(output_filename, 'w', encoding='utf-8') as f:
             json.dump(mapping_data, f, indent=4, ensure_ascii=False)
         print("Operation completed successfully!")
-        print(f"The file '{output_filename}' has been created/overwritten.")
+        print(f"The file '{output_filename}' has been created/overwritten for version {selected_version}.")
     except IOError as e:
         print(f"Error while writing the JSON file: {e}")
 
