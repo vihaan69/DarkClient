@@ -6,7 +6,7 @@
 
 A Minecraft hacked client built in Rust, utilizing JNI (Java Native Interface) for seamless integration with Minecraft's Java runtime. DarkClient provides a robust architecture for developing game modifications through dynamic library injection.
 
-### Minecraft Version Mappings: 1.21.7
+### Minecraft Version Mappings: 1.21.8
 
 ## 🚀 Features
 
