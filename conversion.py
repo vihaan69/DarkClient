@@ -5,6 +5,7 @@ converts them into a custom JSON format, and saves the output to 'mappings.json'
 import re
 import json
 import requests
+import argparse
 
 def get_all_release_versions():
     """
@@ -230,14 +231,26 @@ def main():
     """
     Main function that orchestrates the download, parsing, and saving of mappings.
     """
+    # Set up argument parsing
+    parser = argparse.ArgumentParser(description='Download and convert Minecraft client mappings.')
+    parser.add_argument('--current', action='store_true', 
+                        help='Automatically download the newest available release version without showing the menu')
+    args = parser.parse_args()
+    
     release_versions = get_all_release_versions()
     if not release_versions:
         return
 
-    selected_version = present_version_menu(release_versions)
-    if not selected_version:
-        print("No version selected. Exiting.")
-        return
+    if args.current:
+        # Automatically select the first (newest) version
+        selected_version = release_versions[0]
+        print(f"Automatically selected the newest version: {selected_version}")
+    else:
+        # Present the interactive menu as before
+        selected_version = present_version_menu(release_versions)
+        if not selected_version:
+            print("No version selected. Exiting.")
+            return
 
     mappings_text = download_client_mappings(selected_version)
     if not mappings_text:
