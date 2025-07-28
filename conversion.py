@@ -202,10 +202,26 @@ def parse_mappings(input_text):
             }
     print(f"Found and parsed {len(class_map)} classes.")
 
+    # Track methods by their original name to handle overloading
     print("Second pass: parsing methods and fields...")
     current_class_jvm = None
+    method_overloads = {}  # Temporary storage for method overloads
+    
     for line in lines:
         if class_match := class_re.match(line):
+            # Process any pending method overloads for the previous class
+            if current_class_jvm and method_overloads:
+                for method_name, methods in method_overloads.items():
+                    if len(methods) > 1:
+                        # Multiple methods with the same name - store as an array
+                        data["classes"][current_class_jvm]["methods"][method_name] = methods
+                    else:
+                        # Only one method with this name - store as a single object
+                        data["classes"][current_class_jvm]["methods"][method_name] = methods[0]
+                
+                # Clear the overloads for the next class
+                method_overloads = {}
+            
             current_class_jvm = class_match.group(1).replace('.', '/')
             continue
 
@@ -215,15 +231,34 @@ def parse_mappings(input_text):
         if method_match := method_re.match(line):
             return_type, method_name, params, obf_method = method_match.groups()
             signature = get_method_signature(return_type, params, class_map)
-            data["classes"][current_class_jvm]["methods"][method_name] = {
+            
+            # Create a method entry
+            method_entry = {
                 "name": obf_method,
                 "signature": signature
             }
+            
+            # Track method overloads by original method name
+            if method_name not in method_overloads:
+                method_overloads[method_name] = []
+            method_overloads[method_name].append(method_entry)
+                
         elif field_match := field_re.match(line):
             field_type, field_name, obf_field = field_match.groups()
             data["classes"][current_class_jvm]["fields"][field_name] = {
                 "name": obf_field
             }
+    
+    # Process any pending method overloads for the last class
+    if current_class_jvm and method_overloads:
+        for method_name, methods in method_overloads.items():
+            if len(methods) > 1:
+                # Multiple methods with the same name - store as an array
+                data["classes"][current_class_jvm]["methods"][method_name] = methods
+            else:
+                # Only one method with this name - store as a single object
+                data["classes"][current_class_jvm]["methods"][method_name] = methods[0]
+    
     print("Method and field parsing complete.")
     return data
 
