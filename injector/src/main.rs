@@ -15,6 +15,16 @@ fn main() {
     )
     .unwrap();
 
+    if !is_elevated() {
+        #[cfg(target_family = "unix")]
+        eprintln!("❌ Please run this program with sudo: `sudo ./injector`");
+
+        #[cfg(target_family = "windows")]
+        eprintln!("❌ Please run this program as Administrator (Right click → Run as administrator)");
+
+        return; // non lancio la GUI
+    }
+
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([400.0, 300.0])
@@ -75,4 +85,20 @@ impl eframe::App for InjectorGUI {
             }
         });
     }
+}
+
+#[cfg(target_family = "unix")]
+fn is_elevated() -> bool {
+    extern "C" {
+        fn geteuid() -> u32;
+    }
+    unsafe { geteuid() == 0 }
+}
+
+#[cfg(target_family = "windows")]
+fn is_elevated() -> bool {
+    extern "system" {
+        fn IsUserAnAdmin() -> i32;
+    }
+    unsafe { IsUserAnAdmin() != 0 }
 }
