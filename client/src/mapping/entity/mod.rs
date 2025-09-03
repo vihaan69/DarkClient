@@ -1,23 +1,24 @@
 use crate::mapping::{FieldType, GameContext, MinecraftClassType};
 use jni::objects::{GlobalRef, JValue};
+use std::ops::Deref;
 
 pub mod player;
 
 #[derive(Debug, Clone)]
 pub struct EntityLivingBase {
-    pub jni_entity_living_base: GlobalRef,
+    pub jni_ref: GlobalRef,
 }
 
 #[derive(Debug, Clone)]
 pub struct Entity {
-    pub jni_entity: GlobalRef,
+    pub jni_ref: GlobalRef,
 }
 
 impl GameContext for Entity {}
 
 impl Entity {
-    pub fn new(jni_entity: GlobalRef) -> Entity {
-        Entity { jni_entity }
+    pub fn new(jni_ref: GlobalRef) -> Entity {
+        Entity { jni_ref }
     }
 
     pub fn get_position(&self) -> (f64, f64, f64) {
@@ -26,7 +27,7 @@ impl Entity {
         let vec3 = mapping
             .call_method(
                 MinecraftClassType::Entity,
-                self.jni_entity.as_obj(),
+                self.jni_ref.as_obj(),
                 "position",
                 &[],
             )
@@ -56,7 +57,7 @@ impl Entity {
 
         mapping.call_method(
             MinecraftClassType::Entity,
-            self.jni_entity.as_obj(),
+            self.jni_ref.as_obj(),
             "setInvulnerable",
             &[JValue::from(value)],
         );
@@ -68,7 +69,7 @@ impl Entity {
         mapping
             .get_field(
                 MinecraftClassType::Entity,
-                self.jni_entity.as_obj(),
+                self.jni_ref.as_obj(),
                 "fallDistance",
                 FieldType::Double,
             )
@@ -82,7 +83,7 @@ impl Entity {
         mapping
             .call_method(
                 MinecraftClassType::Entity,
-                self.jni_entity.as_obj(),
+                self.jni_ref.as_obj(),
                 "resetFallDistance",
                 &[],
             )
@@ -97,12 +98,28 @@ impl Entity {
             mapping
                 .call_method(
                     MinecraftClassType::Entity,
-                    self.jni_entity.as_obj(),
+                    self.jni_ref.as_obj(),
                     "getName",
                     &[],
                 )
                 .l()
                 .unwrap(),
         )
+    }
+}
+
+impl Deref for Entity {
+    type Target = GlobalRef;
+
+    fn deref(&self) -> &Self::Target {
+        &self.jni_ref
+    }
+}
+
+impl Deref for EntityLivingBase {
+    type Target = GlobalRef;
+
+    fn deref(&self) -> &Self::Target {
+        &self.jni_ref
     }
 }

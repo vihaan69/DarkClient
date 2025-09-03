@@ -2,6 +2,7 @@ use crate::mapping::entity::Entity;
 use crate::mapping::{FieldType, GameContext, Mapping, MinecraftClassType};
 use jni::objects::{GlobalRef, JValue};
 use jni::sys::jboolean;
+use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub struct LocalPlayer {
@@ -87,5 +88,21 @@ impl Abilities {
             )
             .z()
             .unwrap()
+    }
+}
+
+impl Deref for LocalPlayer {
+    type Target = GlobalRef;
+
+    fn deref(&self) -> &Self::Target {
+        &self.jni_ref
+    }
+}
+
+impl Deref for Abilities {
+    type Target = GlobalRef;
+
+    fn deref(&self) -> &Self::Target {
+        &self.jni_ref
     }
 }

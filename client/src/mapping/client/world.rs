@@ -1,9 +1,10 @@
 use crate::mapping::{FieldType, GameContext, Mapping, MinecraftClassType};
 use jni::objects::GlobalRef;
+use std::ops::Deref;
 
 #[derive(Debug)]
 pub struct World {
-    jni_world: GlobalRef,
+    jni_ref: GlobalRef,
 }
 
 impl GameContext for World {}
@@ -21,7 +22,15 @@ impl World {
             .unwrap();
 
         World {
-            jni_world: mapping.new_global_ref(world_obj),
+            jni_ref: mapping.new_global_ref(world_obj),
         }
+    }
+}
+
+impl Deref for World {
+    type Target = GlobalRef;
+
+    fn deref(&self) -> &Self::Target {
+        &self.jni_ref
     }
 }

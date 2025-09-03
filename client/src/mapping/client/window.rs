@@ -1,6 +1,7 @@
 use crate::mapping::{GameContext, Mapping, MinecraftClassType};
 use jni::objects::GlobalRef;
 use jni::sys::jlong;
+use std::ops::Deref;
 
 #[derive(Debug)]
 pub struct Window {
@@ -38,5 +39,13 @@ impl Window {
             )
             .j()
             .unwrap()
+    }
+}
+
+impl Deref for Window {
+    type Target = GlobalRef;
+
+    fn deref(&self) -> &Self::Target {
+        &self.jni_ref
     }
 }

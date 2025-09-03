@@ -20,7 +20,9 @@ fn main() {
         eprintln!("❌ Please run this program with sudo: `sudo ./injector`");
 
         #[cfg(target_family = "windows")]
-        eprintln!("❌ Please run this program as Administrator (Right click → Run as administrator)");
+        eprintln!(
+            "❌ Please run this program as Administrator (Right click → Run as administrator)"
+        );
 
         return; // non lancio la GUI
     }

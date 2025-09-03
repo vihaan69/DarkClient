@@ -4,6 +4,7 @@ use crate::mapping::entity::player::LocalPlayer;
 use crate::mapping::{Mapping, MinecraftClassType};
 use jni::objects::GlobalRef;
 use log::error;
+use std::ops::Deref;
 use std::sync::{Arc, OnceLock};
 
 #[derive(Debug)]
@@ -50,5 +51,13 @@ impl Minecraft {
 
     pub fn get_mapping(&self) -> &Mapping {
         &self.mapping
+    }
+}
+
+impl Deref for Minecraft {
+    type Target = GlobalRef;
+
+    fn deref(&self) -> &Self::Target {
+        &self.jni_ref
     }
 }
