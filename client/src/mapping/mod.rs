@@ -601,7 +601,7 @@ impl Mapping {
         DarkClient::instance()
     }
 
-    fn get_env(&self) -> JNIEnv {
+    fn get_env(&'_ self) -> JNIEnv<'_> {
         self.get_client()
             .get_env()
             .log_expect("Failed to get jni env")
@@ -614,11 +614,11 @@ impl Mapping {
     }
 
     pub fn call_static_method(
-        &self,
+        &'_ self,
         class_type: MinecraftClassType,
         method_name: &str,
         args: &[JValue],
-    ) -> JValueOwned {
+    ) -> JValueOwned<'_> {
         let mut env = self.get_env();
 
         let class = self.get_class(class_type.get_name());
@@ -637,12 +637,12 @@ impl Mapping {
     }
 
     pub fn call_method(
-        &self,
+        &'_ self,
         class_type: MinecraftClassType,
         instance: &JObject,
         method_name: &str,
         args: &[JValue],
-    ) -> JValueOwned {
+    ) -> JValueOwned<'_> {
         let mut env = self.get_env();
 
         let class = self.get_class(class_type.get_name());
@@ -658,11 +658,11 @@ impl Mapping {
     }
 
     pub fn get_static_field(
-        &self,
+        &'_ self,
         class_type: MinecraftClassType,
         field_name: &str,
         field_type: FieldType,
-    ) -> JValueOwned {
+    ) -> JValueOwned<'_> {
         let mut env = self.get_env();
 
         let class = self.get_class(class_type.get_name());
@@ -675,12 +675,12 @@ impl Mapping {
     }
 
     pub fn get_field(
-        &self,
+        &'_ self,
         class_type: MinecraftClassType,
         instance: &JObject,
         field_name: &str,
         field_type: FieldType,
-    ) -> JValueOwned {
+    ) -> JValueOwned<'_> {
         let mut env = self.get_env();
 
         let class = self.get_class(class_type.get_name());
@@ -733,8 +733,8 @@ impl Default for Mapping {
 }
 
 // Implement Display for better error messages
-impl std::fmt::Display for MinecraftClassType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for MinecraftClassType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.get_name())
     }
 }

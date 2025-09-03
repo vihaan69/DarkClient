@@ -39,7 +39,7 @@ impl DarkClient {
         })
     }
 
-    pub fn get_env(&self) -> jni::errors::Result<JNIEnv> {
+    pub fn get_env(&'_ self) -> jni::errors::Result<JNIEnv<'_>> {
         //self.jvm.attach_current_thread()
         self.jvm.attach_current_thread_as_daemon()
     }
