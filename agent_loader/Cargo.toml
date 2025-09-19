@@ -2,6 +2,7 @@
 name = "agent_loader"
 version.workspace = true
 edition.workspace = true
+build = "build.rs"
 
 [lib]
 name = "agent_loader"

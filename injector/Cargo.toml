@@ -8,5 +8,4 @@ egui.workspace = true
 eframe.workspace = true
 log.workspace = true
 simplelog.workspace = true
-dll-syringe = "0.15.2"
 proc-maps = "0.4.0"
