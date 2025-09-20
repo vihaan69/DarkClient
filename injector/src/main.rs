@@ -1,4 +1,5 @@
 mod platform;
+mod tui;
 
 use eframe::{CreationContext, Frame};
 use egui::Context;
@@ -24,7 +25,13 @@ fn main() {
             "❌ Please run this program as Administrator (Right click → Run as administrator)"
         );
 
-        return; // non lancio la GUI
+        return; // Exit the program if not elevated
+    }
+
+    let args: Vec<String> = std::env::args().collect();
+    if args.contains(&"--tui".to_string()) {
+        tui::run_tui();
+        return;
     }
 
     let native_options = eframe::NativeOptions {

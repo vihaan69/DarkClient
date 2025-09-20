@@ -9,3 +9,4 @@ eframe.workspace = true
 log.workspace = true
 simplelog.workspace = true
 proc-maps = "0.4.0"
+crossterm = "0.29"
