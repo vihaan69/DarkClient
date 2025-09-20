@@ -75,17 +75,31 @@ pub fn inject(pid: u32) -> Result<(), io::Error> {
 }
 
 pub fn find_pid() -> Option<u32> {
-    let output = Command::new("tasklist")
-        .output()
-        .expect("Failed to execute `tasklist` command");
+    let output = Command::new("powershell")
+        .arg("-NoProfile")
+        .arg("-Command")
+        .arg(r#"Get-Process -Name javaw -ErrorAction SilentlyContinue |
+                     Where-Object { $_.MainWindowTitle -like '*Minecraft*' } |
+                     Select-Object -ExpandProperty Id"#)
+        .output();
 
-    let output_str = String::from_utf8_lossy(&output.stdout);
+    if output.is_err() {
+        eprintln!("Output error, {}", output.err().unwrap());
+        return None;
+    }
 
-    for line in output_str.lines() {
-        if line.contains("minecraft") && line.contains("java") {
-            if let Some(pid) = line.split_whitespace().nth(1) {
-                println!("{}", pid);
-            }
+    let output = output.unwrap();
+
+    if !output.status.success() {
+        eprintln!("PowerShell failed");
+        return None;
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for line in stdout.lines() {
+        if let Ok(pid) = line.trim().parse::<u32>() {
+            println!("Found PID: {}", pid);
+            return Some(pid);
         }
     }
     None
