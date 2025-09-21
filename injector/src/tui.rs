@@ -1,4 +1,10 @@
-use crossterm::{execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen}, event::{self, Event, KeyCode}, cursor, style::Print};
+use crossterm::{
+    cursor,
+    event::{self, Event, KeyCode},
+    execute,
+    style::Print,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+};
 use std::io::stdout;
 
 pub fn run_tui() {
@@ -40,7 +46,13 @@ pub fn run_tui() {
             }
         }
         // Clear the line to update the status
-        execute!(stdout, cursor::MoveTo(0, 3), Print(" ".repeat(50)), cursor::MoveTo(0, 3)).unwrap();
+        execute!(
+            stdout,
+            cursor::MoveTo(0, 3),
+            Print(" ".repeat(50)),
+            cursor::MoveTo(0, 3)
+        )
+        .unwrap();
     }
 
     execute!(stdout, LeaveAlternateScreen, cursor::Show).unwrap();

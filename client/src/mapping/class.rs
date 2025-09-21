@@ -90,13 +90,13 @@ impl MinecraftClass {
             .get(name)
             .unwrap()
             .first()
-            .log_expect(format!("{} method not found", name).as_str())
+            .log_expect(format!("{} method not found", name))
     }
 
     pub fn get_methods(&self, name: &str) -> &Vec<Method> {
         self.methods
             .get(name)
-            .log_expect(format!("{} method not found", name).as_str())
+            .log_expect(format!("{} method not found", name))
     }
 
     pub fn get_method_by_signature(&self, name: &str, signature: &str) -> &Method {
@@ -104,7 +104,10 @@ impl MinecraftClass {
         methods
             .iter()
             .find(|method| method.signature == signature)
-            .log_expect(format!("{} method with signature {} not found", name, signature).as_str())
+            .log_expect(format!(
+                "{} method with signature {} not found",
+                name, signature
+            ))
     }
 
     pub fn get_method_by_args(&self, name: &str, args: &[JValue]) -> &Method {
@@ -499,7 +502,7 @@ impl MinecraftClass {
     pub fn get_field(&self, name: &str) -> &Field {
         self.fields
             .get(name)
-            .log_expect(format!("{} field not found", name).as_str())
+            .log_expect(format!("{} field not found", name))
     }
 }
 

@@ -8,8 +8,9 @@ build = "build.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
-#egui.workspace = true
-#eframe.workspace = true
+egui.workspace = true
+eframe.workspace = true
+winit = "0.30"
 log.workspace = true
 simplelog.workspace = true
 jni = "0.21.1"

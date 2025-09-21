@@ -88,7 +88,7 @@ impl Mapping {
     pub fn get_class(&self, name: &str) -> &MinecraftClass {
         self.classes
             .get(name)
-            .log_expect(format!("{} java class not found", name).as_str())
+            .log_expect(format!("{} java class not found", name))
     }
 
     pub fn call_static_method(
@@ -102,16 +102,13 @@ impl Mapping {
         let class = self.get_class(class_type.get_name());
         let jclass = env
             .find_class(&class.name)
-            .log_expect(format!("{} class not found", class_type.get_name()).as_str());
+            .log_expect(format!("{} class not found", class_type.get_name()));
         let method = class.get_method_by_args(method_name, args);
         env.call_static_method(jclass, &method.name, &method.signature, args)
-            .log_expect(
-                format!(
-                    "Error when calling static method {} in class {} with method signature {}",
-                    method.name, class.name, method.signature
-                )
-                .as_str(),
-            )
+            .log_expect(format!(
+                "Error when calling static method {} in class {} with method signature {}",
+                method.name, class.name, method.signature
+            ))
     }
 
     pub fn call_method(
@@ -126,13 +123,10 @@ impl Mapping {
         let class = self.get_class(class_type.get_name());
         let method = class.get_method_by_args(method_name, args);
         env.call_method(instance, &method.name, &method.signature, args)
-            .log_expect(
-                format!(
-                    "Error when calling method {} in class {} with method signature {}",
-                    method.name, class.name, method.signature
-                )
-                .as_str(),
-            )
+            .log_expect(format!(
+                "Error when calling method {} in class {} with method signature {}",
+                method.name, class.name, method.signature
+            ))
     }
 
     pub fn get_static_field(
@@ -146,10 +140,10 @@ impl Mapping {
         let class = self.get_class(class_type.get_name());
         let jclass = env
             .find_class(&class.name)
-            .log_expect(format!("{} class not found", class_type.get_name()).as_str());
+            .log_expect(format!("{} class not found", class_type.get_name()));
         let field = class.get_field(field_name);
         env.get_static_field(jclass, &field.name, field_type.get_signature())
-            .log_expect(format!("Error when getting static field {}", field.name).as_str())
+            .log_expect(format!("Error when getting static field {}", field.name))
     }
 
     pub fn get_field(
@@ -165,7 +159,7 @@ impl Mapping {
         let field = class.get_field(field_name);
 
         env.get_field(instance, &field.name, field_type.get_signature())
-            .log_expect(format!("Error when getting field {}", field.name).as_str())
+            .log_expect(format!("Error when getting field {}", field.name))
     }
 
     pub fn set_field(
@@ -181,7 +175,7 @@ impl Mapping {
         let class = self.get_class(class_type.get_name());
         let field = class.get_field(field_name);
         env.set_field(instance, &field.name, field_type.get_signature(), value)
-            .log_expect(format!("Error when setting field {}", field.name).as_str());
+            .log_expect(format!("Error when setting field {}", field.name));
     }
 
     pub fn new_global_ref(&self, obj: JObject) -> GlobalRef {

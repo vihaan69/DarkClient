@@ -1,12 +1,12 @@
 use crate::platform::{AGENT_NAME, LIBRARY_NAME, SOCKET_ADDRESS};
-use std::{io, path, thread};
+use log::{error, info};
+use proc_maps::get_process_maps;
 use std::io::Write;
 use std::net::TcpStream;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
-use log::{error, info};
-use proc_maps::get_process_maps;
+use std::{io, path, thread};
 
 pub fn inject(pid: u32) -> Result<(), io::Error> {
     let loader_path = PathBuf::from(format!("{}.dll", AGENT_NAME));
@@ -78,9 +78,11 @@ pub fn find_pid() -> Option<u32> {
     let output = Command::new("powershell")
         .arg("-NoProfile")
         .arg("-Command")
-        .arg(r#"Get-Process -Name javaw -ErrorAction SilentlyContinue |
+        .arg(
+            r#"Get-Process -Name javaw -ErrorAction SilentlyContinue |
                      Where-Object { $_.MainWindowTitle -like '*Minecraft*' } |
-                     Select-Object -ExpandProperty Id"#)
+                     Select-Object -ExpandProperty Id"#,
+        )
         .output();
 
     if output.is_err() {
