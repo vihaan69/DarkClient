@@ -1,4 +1,5 @@
-use crate::LogExpect;
+use std::sync::atomic::Ordering::Relaxed;
+use crate::{LogExpect, RUNNING};
 use eframe::Frame;
 use egui::Context;
 use winit::platform::x11::EventLoopBuilderExtX11;
@@ -37,6 +38,10 @@ impl Default for GUI {
 
 impl eframe::App for GUI {
     fn update(&mut self, ctx: &Context, _frame: &mut Frame) {
+        if !RUNNING.load(Relaxed) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
+
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("DarkClient");
 
