@@ -1,5 +1,5 @@
 use crate::client::DarkClient;
-use crate::LogExpect;
+use anyhow::anyhow;
 use jni::objects::{JClass, JObject, JString, JValue, JValueOwned};
 use jni::JNIEnv;
 use serde::de::{MapAccess, Visitor};
@@ -85,37 +85,38 @@ enum SignatureMatch {
 }
 
 impl MinecraftClass {
-    pub fn get_method(&self, name: &str) -> &Method {
-        self.methods
-            .get(name)
-            .unwrap()
-            .first()
-            .log_expect(format!("{} method not found", name))
+    pub fn get_method(&self, name: &str) -> anyhow::Result<&Method> {
+        match self.methods.get(name).unwrap().first() {
+            Some(method) => Ok(method),
+            None => Err(anyhow!("{} method not found", name)),
+        }
     }
 
-    pub fn get_methods(&self, name: &str) -> &Vec<Method> {
-        self.methods
-            .get(name)
-            .log_expect(format!("{} method not found", name))
+    pub fn get_methods(&self, name: &str) -> anyhow::Result<&Vec<Method>> {
+        match self.methods.get(name) {
+            Some(methods) => Ok(methods),
+            None => Err(anyhow!("{} method not found", name)),
+        }
     }
 
-    pub fn get_method_by_signature(&self, name: &str, signature: &str) -> &Method {
-        let methods = self.get_methods(name);
-        methods
-            .iter()
-            .find(|method| method.signature == signature)
-            .log_expect(format!(
+    pub fn get_method_by_signature(&self, name: &str, signature: &str) -> anyhow::Result<&Method> {
+        let methods = self.get_methods(name)?;
+        match methods.iter().find(|method| method.signature == signature) {
+            Some(method) => Ok(method),
+            None => Err(anyhow!(
                 "{} method with signature {} not found",
-                name, signature
-            ))
+                name,
+                signature
+            )),
+        }
     }
 
-    pub fn get_method_by_args(&self, name: &str, args: &[JValue]) -> &Method {
-        let methods = self.get_methods(name);
+    pub fn get_method_by_args(&self, name: &str, args: &[JValue]) -> anyhow::Result<&Method> {
+        let methods = self.get_methods(name)?;
 
         // If only one method exists, return it immediately
         if methods.len() == 1 {
-            return &methods[0];
+            return Ok(&methods[0]);
         }
 
         // Find the best matching method based on argument compatibility
@@ -127,7 +128,7 @@ impl MinecraftClass {
 
             if match_quality == SignatureMatch::Exact {
                 // Exact match found, return immediately
-                return method;
+                return Ok(method);
             }
 
             if match_quality == SignatureMatch::Compatible
@@ -145,14 +146,14 @@ impl MinecraftClass {
                     name,
                     method.signature
                 );
-                method
+                Ok(method)
             }
             None => {
                 log::warn!(
                     "No compatible method found for '{}' with {} arguments, using first available method",
                     name, args.len()
                 );
-                &methods[0]
+                Ok(&methods[0])
             }
         }
     }
@@ -499,10 +500,11 @@ impl MinecraftClass {
         }
     }
 
-    pub fn get_field(&self, name: &str) -> &Field {
-        self.fields
-            .get(name)
-            .log_expect(format!("{} field not found", name))
+    pub fn get_field(&self, name: &str) -> anyhow::Result<&Field> {
+        match self.fields.get(name) {
+            Some(fields) => Ok(fields),
+            None => Err(anyhow!("{} field not found", name)),
+        }
     }
 }
 

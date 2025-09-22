@@ -1,10 +1,10 @@
-use std::sync::atomic::Ordering::Relaxed;
-use crate::{LogExpect, RUNNING};
+use crate::RUNNING;
 use eframe::Frame;
 use egui::Context;
+use std::sync::atomic::Ordering::Relaxed;
 use winit::platform::x11::EventLoopBuilderExtX11;
 
-pub fn start_gui() {
+pub fn start_gui() -> anyhow::Result<()> {
     let mut native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([400.0, 300.0])
@@ -20,12 +20,14 @@ pub fn start_gui() {
         }
     }));
 
-    eframe::run_native(
+    match eframe::run_native(
         "DarkClient Injector",
         native_options,
         Box::new(|_| Ok(Box::new(GUI::default()))),
-    )
-    .log_expect("Failed to run the GUI");
+    ) {
+        Ok(_) => Ok(()),
+        Err(e) => Err(anyhow::anyhow!("Failed to run the GUI, {}", e)),
+    }
 }
 
 pub struct GUI;

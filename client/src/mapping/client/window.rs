@@ -11,34 +11,32 @@ pub struct Window {
 impl GameContext for Window {}
 
 impl Window {
-    pub fn new(minecraft: &GlobalRef, mapping: &Mapping) -> Window {
+    pub fn new(minecraft: &GlobalRef, mapping: &Mapping) -> anyhow::Result<Window> {
         let window_obj = mapping
             .call_method(
                 MinecraftClassType::Minecraft,
                 minecraft.as_obj(),
                 "getWindow",
                 &[],
-            )
-            .l()
-            .unwrap();
+            )?
+            .l()?;
 
-        Window {
-            jni_ref: mapping.new_global_ref(window_obj),
-        }
+        Ok(Window {
+            jni_ref: mapping.new_global_ref(window_obj)?,
+        })
     }
 
-    pub fn get_window(&self) -> jlong {
+    pub fn get_window(&self) -> anyhow::Result<jlong> {
         let mapping = self.mapping();
 
-        mapping
+        Ok(mapping
             .call_method(
                 MinecraftClassType::Window,
                 self.jni_ref.as_obj(),
                 "getWindow",
                 &[],
-            )
-            .j()
-            .unwrap()
+            )?
+            .j()?)
     }
 }
 

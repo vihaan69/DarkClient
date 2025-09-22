@@ -10,20 +10,19 @@ pub struct World {
 impl GameContext for World {}
 
 impl World {
-    pub fn new(minecraft: &GlobalRef, mapping: &Mapping) -> World {
+    pub fn new(minecraft: &GlobalRef, mapping: &Mapping) -> anyhow::Result<World> {
         let world_obj = mapping
             .get_field(
                 MinecraftClassType::Minecraft,
                 minecraft.as_obj(),
                 "level",
                 FieldType::Object(MinecraftClassType::Level, mapping),
-            )
-            .l()
-            .unwrap();
+            )?
+            .l()?;
 
-        World {
-            jni_ref: mapping.new_global_ref(world_obj),
-        }
+        Ok(World {
+            jni_ref: mapping.new_global_ref(world_obj)?,
+        })
     }
 }
 

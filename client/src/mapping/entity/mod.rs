@@ -21,7 +21,7 @@ impl Entity {
         Entity { jni_ref }
     }
 
-    pub fn get_position(&self) -> (f64, f64, f64) {
+    pub fn get_position(&self) -> anyhow::Result<(f64, f64, f64)> {
         let mapping = self.mapping();
 
         let vec3 = mapping
@@ -30,29 +30,25 @@ impl Entity {
                 self.jni_ref.as_obj(),
                 "position",
                 &[],
-            )
-            .l()
-            .unwrap();
+            )?
+            .l()?;
 
         let x = mapping
-            .get_field(MinecraftClassType::Vec3, &vec3, "x", FieldType::Double)
-            .d()
-            .unwrap();
+            .get_field(MinecraftClassType::Vec3, &vec3, "x", FieldType::Double)?
+            .d()?;
 
         let y = mapping
-            .get_field(MinecraftClassType::Vec3, &vec3, "y", FieldType::Double)
-            .d()
-            .unwrap();
+            .get_field(MinecraftClassType::Vec3, &vec3, "y", FieldType::Double)?
+            .d()?;
 
         let z = mapping
-            .get_field(MinecraftClassType::Vec3, &vec3, "z", FieldType::Double)
-            .d()
-            .unwrap();
+            .get_field(MinecraftClassType::Vec3, &vec3, "z", FieldType::Double)?
+            .d()?;
 
-        (x, y, z)
+        Ok((x, y, z))
     }
 
-    pub fn set_invulnerable(&self, value: bool) {
+    pub fn set_invulnerable(&self, value: bool) -> anyhow::Result<()> {
         let mapping = self.mapping();
 
         mapping.call_method(
@@ -60,38 +56,38 @@ impl Entity {
             self.jni_ref.as_obj(),
             "setInvulnerable",
             &[JValue::from(value)],
-        );
+        )?;
+
+        Ok(())
     }
 
-    pub fn get_fall_distance(&self) -> f64 {
+    pub fn get_fall_distance(&self) -> anyhow::Result<f64> {
         let mapping = self.mapping();
 
-        mapping
+        Ok(mapping
             .get_field(
                 MinecraftClassType::Entity,
                 self.jni_ref.as_obj(),
                 "fallDistance",
                 FieldType::Double,
-            )
-            .d()
-            .unwrap()
+            )?
+            .d()?)
     }
 
-    pub fn reset_fall_distance(&self) {
+    pub fn reset_fall_distance(&self) -> anyhow::Result<()> {
         let mapping = self.mapping();
 
-        mapping
+        Ok(mapping
             .call_method(
                 MinecraftClassType::Entity,
                 self.jni_ref.as_obj(),
                 "resetFallDistance",
                 &[],
-            )
-            .v()
-            .unwrap();
+            )?
+            .v()?)
     }
 
-    pub fn get_name(&self) -> String {
+    pub fn get_name(&self) -> anyhow::Result<String> {
         let mapping = self.mapping();
 
         mapping.get_string(
@@ -101,9 +97,8 @@ impl Entity {
                     self.jni_ref.as_obj(),
                     "getName",
                     &[],
-                )
-                .l()
-                .unwrap(),
+                )?
+                .l()?,
         )
     }
 }

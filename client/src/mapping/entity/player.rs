@@ -20,41 +20,39 @@ impl GameContext for LocalPlayer {}
 impl GameContext for Abilities {}
 
 impl LocalPlayer {
-    pub fn new(minecraft: &GlobalRef, mapping: &Mapping) -> Self {
+    pub fn new(minecraft: &GlobalRef, mapping: &Mapping) -> anyhow::Result<Self> {
         let player_obj = mapping
             .get_field(
                 MinecraftClassType::Minecraft,
                 minecraft.as_obj(),
                 "player",
                 FieldType::Object(MinecraftClassType::LocalPlayer, mapping),
-            )
-            .l()
-            .unwrap();
+            )?
+            .l()?;
 
-        let player_ref = mapping.new_global_ref(player_obj);
-        let abilities = Abilities::new(player_ref.clone(), mapping);
+        let player_ref = mapping.new_global_ref(player_obj)?;
+        let abilities = Abilities::new(player_ref.clone(), mapping)?;
         let entity = Entity::new(player_ref.clone());
 
-        Self {
+        Ok(Self {
             jni_ref: player_ref,
             abilities,
             entity,
-        }
+        })
     }
 }
 
 impl Abilities {
-    pub fn new(player: GlobalRef, mapping: &Mapping) -> Self {
+    pub fn new(player: GlobalRef, mapping: &Mapping) -> anyhow::Result<Self> {
         let jni_ref = mapping
-            .call_method(MinecraftClassType::Player, &player, "getAbilities", &[])
-            .l()
-            .unwrap();
-        Self {
-            jni_ref: mapping.new_global_ref(jni_ref),
-        }
+            .call_method(MinecraftClassType::Player, &player, "getAbilities", &[])?
+            .l()?;
+        Ok(Self {
+            jni_ref: mapping.new_global_ref(jni_ref)?,
+        })
     }
 
-    pub fn fly(&self, value: bool) {
+    pub fn fly(&self, value: bool) -> anyhow::Result<()> {
         let mapping = self.mapping();
 
         let value: jboolean = if value { 1 } else { 0 };
@@ -65,7 +63,7 @@ impl Abilities {
             "flying",
             FieldType::Boolean,
             JValue::Bool(value),
-        );
+        )?;
 
         mapping.set_field(
             MinecraftClassType::Abilities,
@@ -73,21 +71,22 @@ impl Abilities {
             "mayfly",
             FieldType::Boolean,
             JValue::Bool(value),
-        );
+        )?;
+
+        Ok(())
     }
 
-    pub fn get_may_fly(&self) -> bool {
+    pub fn get_may_fly(&self) -> anyhow::Result<bool> {
         let mapping = self.mapping();
 
-        mapping
+        Ok(mapping
             .get_field(
                 MinecraftClassType::Abilities,
                 self.jni_ref.as_obj(),
                 "mayfly",
                 FieldType::Boolean,
-            )
-            .z()
-            .unwrap()
+            )?
+            .z()?)
     }
 }
 

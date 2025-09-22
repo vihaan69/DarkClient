@@ -20,33 +20,37 @@ impl Minecraft {
     pub fn instance() -> &'static Minecraft {
         static INSTANCE: OnceLock<Arc<Minecraft>> = OnceLock::new();
 
-        INSTANCE.get_or_init(|| unsafe { Arc::new(Minecraft::new()) })
+        INSTANCE.get_or_init(|| unsafe {
+            Arc::new(Minecraft::new().unwrap_or_else(|e| {
+                error!("Failed to initialize Minecraft: {:?}", e);
+                panic!("Failed to initialize Minecraft");
+            }))
+        })
     }
 
-    unsafe fn new() -> Minecraft {
-        let mapping = Mapping::new();
+    unsafe fn new() -> anyhow::Result<Minecraft> {
+        let mapping = Mapping::new()?;
         let minecraft = mapping
-            .call_static_method(MinecraftClassType::Minecraft, "getInstance", &[])
-            .l()
-            .unwrap();
+            .call_static_method(MinecraftClassType::Minecraft, "getInstance", &[])?
+            .l()?;
 
         if minecraft.is_null() {
             error!("Minecraft is null")
         }
 
-        let minecraft = mapping.new_global_ref(minecraft);
+        let minecraft = mapping.new_global_ref(minecraft)?;
 
-        let player = LocalPlayer::new(&minecraft, &mapping);
-        let world = World::new(&minecraft, &mapping);
-        let window = Window::new(&minecraft, &mapping);
+        let player = LocalPlayer::new(&minecraft, &mapping)?;
+        let world = World::new(&minecraft, &mapping)?;
+        let window = Window::new(&minecraft, &mapping)?;
 
-        Minecraft {
+        Ok(Minecraft {
             jni_ref: minecraft,
             mapping,
             player,
             world,
             window,
-        }
+        })
     }
 
     pub fn get_mapping(&self) -> &Mapping {

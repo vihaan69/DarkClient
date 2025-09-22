@@ -1,7 +1,7 @@
 use crate::module::{Module, ModuleType};
-use crate::LogExpect;
 use jni::sys::{jsize, JNI_GetCreatedJavaVMs, JNI_OK};
 use jni::{JNIEnv, JavaVM};
+use log::error;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock, RwLock};
 
@@ -16,21 +16,24 @@ impl DarkClient {
         static INSTANCE: OnceLock<Arc<DarkClient>> = OnceLock::new();
 
         INSTANCE.get_or_init(|| unsafe {
-            Arc::new(DarkClient::new().log_expect("Failed to create DarkClient"))
+            Arc::new(DarkClient::new().unwrap_or_else(|e| {
+                error!("Failed to create DarkClient: {}", e);
+                panic!("Failed to create DarkClient: {}", e);
+            }))
         })
     }
 
-    pub unsafe fn new() -> Result<Self, &'static str> {
+    pub unsafe fn new() -> anyhow::Result<Self> {
         let mut java_vm: *mut jni::sys::JavaVM = std::ptr::null_mut();
         let mut count: jsize = 0;
 
         if JNI_GetCreatedJavaVMs(&mut java_vm, 1, &mut count) != JNI_OK || count == 0 {
-            return Err("Failed to get Java VMs");
+            return Err(anyhow::anyhow!("Failed to get Java VMs"));
         }
 
         let java_vm: Arc<JavaVM> = Arc::new(match JavaVM::from_raw(java_vm) {
             Ok(jvm) => jvm,
-            Err(_) => return Err("Could not get JavaVM"),
+            Err(_) => return Err(anyhow::anyhow!("Could not get JavaVM")),
         });
 
         Ok(DarkClient {
@@ -83,7 +86,13 @@ pub mod keyboard {
             let client = DarkClient::instance();
             let mut env = client.get_env().unwrap();
 
-            let glfw_window = minecraft.window.get_window();
+            let glfw_window = match minecraft.window.get_window() {
+                Ok(window) => window,
+                Err(e) => {
+                    error!("Failed to get GLFW window: {}", e);
+                    return;
+                }
+            };
 
             let mut keys: HashSet<i32> = HashSet::new();
             while RUNNING

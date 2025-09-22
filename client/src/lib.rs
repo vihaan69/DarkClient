@@ -33,28 +33,6 @@ fn gui_thread() -> &'static Mutex<Option<thread::JoinHandle<()>>> {
     GUI_THREAD.get_or_init(|| Mutex::new(None))
 }
 
-pub trait LogExpect<T> {
-    fn log_expect(self, msg: impl AsRef<str>) -> T;
-}
-
-impl<T, E: std::fmt::Debug> LogExpect<T> for Result<T, E> {
-    fn log_expect(self, msg: impl AsRef<str>) -> T {
-        self.unwrap_or_else(|e| {
-            error!("{}: {:?}", msg.as_ref(), e);
-            panic!("{}: {:?}", msg.as_ref(), e);
-        })
-    }
-}
-
-impl<T> LogExpect<T> for Option<T> {
-    fn log_expect(self, msg: impl AsRef<str>) -> T {
-        self.unwrap_or_else(|| {
-            error!("{}", msg.as_ref());
-            panic!("{}", msg.as_ref());
-        })
-    }
-}
-
 #[no_mangle]
 pub extern "C" fn initialize_client() {
     // Make sure we can't initialize more than once
