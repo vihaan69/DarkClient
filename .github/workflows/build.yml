@@ -2,7 +2,7 @@ name: Build Rust Project (Linux & Windows)
 
 on:
   push:
-    branches: [ main, ci-workflow ]
+    branches: [ main ]
     tags:
       - "v*"
   pull_request:
