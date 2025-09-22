@@ -2,6 +2,7 @@ use crate::RUNNING;
 use eframe::Frame;
 use egui::Context;
 use std::sync::atomic::Ordering::Relaxed;
+#[cfg(target_os = "linux")]
 use winit::platform::x11::EventLoopBuilderExtX11;
 
 pub fn start_gui() -> anyhow::Result<()> {
