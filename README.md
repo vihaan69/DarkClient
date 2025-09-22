@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/License-GNU%20GPL-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey.svg)
 
-A Minecraft hacked client built in Rust, utilizing JNI (Java Native Interface) for seamless integration with Minecraft's Java runtime. DarkClient provides a robust architecture for developing game modifications through dynamic library injection.
+A Minecraft hacked client built in Rust, using JNI (Java Native Interface) for seamless integration with Minecraft's Java runtime. DarkClient provides a robust architecture for developing game modifications through dynamic library injection.
 
 ### Minecraft Version Mappings: 1.21.8
 
@@ -48,6 +48,17 @@ The core modification framework featuring:
 - **Java Development Kit (JDK) 21+**
 - **Minecraft Java Edition**
 
+## ⬇️ Download
+
+If you prefer precompiled binaries instead of building from source:
+
+1. Go to the **Actions** tab on GitHub.
+2. Open the latest workflow run.
+3. Scroll to the bottom of the page to find the **Artifacts** section.
+4. Download the compiled binaries for your platform (**Linux** or **Windows**).
+
+This allows you to get up and running without waiting for compilation.
+
 ## 🛠️ Installation & Setup
 
 ### 1. Clone the Repository
@@ -86,12 +97,12 @@ python conversion.py
 2. **Start Minecraft** and load into a world
 
 3. **In the Injector GUI**:
-  - Click "Find" to detect the Minecraft process
-  - Click "Inject" to load the modification framework
+- Click "Find" to detect the Minecraft process
+- Click "Inject" to load the modification framework
 
 4. **Use Modules**:
-  - Modules can be toggled using their assigned keybinds
-  - Check the log files for module status and debugging info
+- Modules can be toggled using their assigned keybinds
+- Check the log files for module status and debugging info
 
 ### Module Development
 
@@ -101,30 +112,30 @@ Create new modules by implementing the `Module` trait:
 use crate::module::{Module, ModuleData};
 
 pub struct CustomModule {
-    data: ModuleData,
-    // Your module-specific fields
+   data: ModuleData,
+   // Your module-specific fields
 }
 
 impl Module for CustomModule {
-    fn get_module_data(&self) -> &ModuleData {
-        &self.data
-    }
-    
-    fn get_module_data_mut(&mut self) -> &mut ModuleData {
-        &mut self.data
-    }
-    
-    fn on_start(&self) {
-        // Called when module is enabled
-    }
-    
-    fn on_stop(&self) {
-        // Called when module is disabled
-    }
-    
-    fn on_tick(&self) {
-        // Called every game tick while enabled
-    }
+   fn get_module_data(&self) -> &ModuleData {
+      &self.data
+   }
+
+   fn get_module_data_mut(&mut self) -> &mut ModuleData {
+      &mut self.data
+   }
+
+   fn on_start(&self) {
+      // Called when module is enabled
+   }
+
+   fn on_stop(&self) {
+      // Called when module is disabled
+   }
+
+   fn on_tick(&self) {
+      // Called every game tick while enabled
+   }
 }
 ```
 ```text
