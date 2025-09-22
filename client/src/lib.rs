@@ -71,7 +71,10 @@ pub extern "C" fn initialize_client() {
         });
 
         let gui_handle = thread::spawn(move || {
-            start_gui();
+            match start_gui() {
+                Ok(_) => info!("GUI thread started"),
+                Err(e) => error!("Error while starting GUI thread: {}", e),
+            }
         });
 
         // Memorize the thread handle in a thread-safe way
