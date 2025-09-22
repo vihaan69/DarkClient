@@ -4,6 +4,7 @@ use std::ops::Deref;
 
 pub mod player;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct EntityLivingBase {
     pub jni_ref: GlobalRef,
@@ -16,6 +17,7 @@ pub struct Entity {
 
 impl GameContext for Entity {}
 
+#[allow(dead_code)]
 impl Entity {
     pub fn new(jni_ref: GlobalRef) -> Entity {
         Entity { jni_ref }

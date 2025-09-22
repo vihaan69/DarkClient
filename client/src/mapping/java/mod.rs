@@ -1,10 +1,12 @@
 use jni::objects::GlobalRef;
 use std::ops::Deref;
 
+#[allow(dead_code)]
 pub struct JavaList {
     pub jni_ref: GlobalRef,
 }
 
+#[allow(dead_code)]
 pub struct JavaSet {
     pub jni_ref: GlobalRef,
 }

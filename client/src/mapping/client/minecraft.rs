@@ -12,6 +12,7 @@ pub struct Minecraft {
     pub jni_ref: GlobalRef,
     mapping: Mapping,
     pub player: LocalPlayer,
+    #[allow(dead_code)]
     pub world: World,
     pub window: Window,
 }

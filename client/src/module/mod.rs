@@ -5,6 +5,7 @@ pub mod fly;
 
 pub type ModuleType = dyn Module + Send + Sync;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ModuleCategory {
     COMBAT,
@@ -16,6 +17,7 @@ pub enum ModuleCategory {
 }
 
 impl ModuleCategory {
+    #[allow(dead_code)]
     pub fn display_name(&self) -> &str {
         match self {
             ModuleCategory::COMBAT => "Combat",
@@ -31,13 +33,16 @@ impl ModuleCategory {
 #[derive(Debug, Clone)]
 pub struct ModuleData {
     pub name: String,
+    #[allow(dead_code)]
     pub description: String,
+    #[allow(dead_code)]
     pub category: ModuleCategory,
     pub key_bind: KeyboardKey,
     pub enabled: bool,
     pub player: LocalPlayer,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum ModuleSetting {
     Toggle {
@@ -68,9 +73,9 @@ impl ModuleData {
 }
 
 pub trait Module: Debug + Send + Sync {
-    fn on_start(&self);
-    fn on_stop(&self);
-    fn on_tick(&self);
+    fn on_start(&self) -> anyhow::Result<()>;
+    fn on_stop(&self) -> anyhow::Result<()>;
+    fn on_tick(&self) -> anyhow::Result<()>;
 
     fn get_module_data(&self) -> &ModuleData;
     fn get_module_data_mut(&mut self) -> &mut ModuleData;
