@@ -17,18 +17,19 @@ impl FlyModule {
 }
 
 impl Module for FlyModule {
-    fn on_start(&self) {
+    fn on_start(&self) -> anyhow::Result<()> {
         // Enables flying
-        self.module.player.abilities.fly(true);
+        self.module.player.abilities.fly(true)
     }
 
-    fn on_stop(&self) {
+    fn on_stop(&self) -> anyhow::Result<()> {
         // Disables flying
-        self.module.player.abilities.fly(false);
+        self.module.player.abilities.fly(false)
     }
 
-    fn on_tick(&self) {
+    fn on_tick(&self) -> anyhow::Result<()>{
         // No operation
+        Ok(())
     }
 
     fn get_module_data(&self) -> &ModuleData {

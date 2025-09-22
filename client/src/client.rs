@@ -57,7 +57,19 @@ impl DarkClient {
         for module in modules.values() {
             let module = module.lock().unwrap();
             if module.get_module_data().enabled {
-                module.on_tick();
+                match module.on_tick() {
+                    Ok(_) => {}
+                    Err(e) => {
+                        error!("Failed to tick module {}, disabling. {}", module.get_module_data().name, e);
+                        match module.on_stop() {
+                            Ok(_) => {}
+                            Err(_) => {
+                                error!("Failed to stop module {} after an error when ticking", module.get_module_data().name);
+                                panic!("Failed to stop module {} after an error when ticking", module.get_module_data().name);
+                            }
+                        }
+                    },
+                }
             }
         }
     }
@@ -118,9 +130,15 @@ pub mod keyboard {
                                 if enabled { "enabled" } else { "disabled" }
                             );
                             if enabled {
-                                module.on_start();
+                                match module.on_start() {
+                                    Ok(_) => {}
+                                    Err(e) => error!("Failed to start module {}: {}", module.get_module_data().name, e),
+                                }
                             } else {
-                                module.on_stop();
+                                match module.on_stop() {
+                                    Ok(_) => {}
+                                    Err(e) => error!("Failed to stop module {}: {}", module.get_module_data().name, e),
+                                }
                             }
                             module.get_module_data_mut().set_enabled(enabled);
                         }

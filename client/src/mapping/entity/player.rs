@@ -76,6 +76,7 @@ impl Abilities {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn get_may_fly(&self) -> anyhow::Result<bool> {
         let mapping = self.mapping();
 

@@ -84,6 +84,7 @@ enum SignatureMatch {
     Incompatible,
 }
 
+#[allow(dead_code)]
 impl MinecraftClass {
     pub fn get_method(&self, name: &str) -> anyhow::Result<&Method> {
         match self.methods.get(name).unwrap().first() {

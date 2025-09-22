@@ -15,10 +15,6 @@ pub mod entity;
 pub mod java;
 
 pub trait GameContext {
-    fn client(&self) -> &'static DarkClient {
-        DarkClient::instance()
-    }
-
     fn minecraft(&self) -> &'static Minecraft {
         Minecraft::instance()
     }
@@ -68,6 +64,7 @@ impl FieldType<'_> {
     }
 }
 
+#[allow(dead_code)]
 impl Mapping {
     pub fn new() -> anyhow::Result<Mapping> {
         let contents = include_str!("../../../mappings.json");
@@ -101,12 +98,12 @@ impl Mapping {
         let class = self.get_class(class_type.get_name())?;
         let jclass = match env.find_class(&class.name) {
             Ok(jclass) => jclass,
-            Err(e) => return Err(anyhow::anyhow!("{} class not found", class_type.get_name())),
+            Err(_) => return Err(anyhow::anyhow!("{} class not found", class_type.get_name())),
         };
         let method = class.get_method_by_args(method_name, args)?;
         match env.call_static_method(jclass, &method.name, &method.signature, args) {
             Ok(value) => Ok(value),
-            Err(e) => Err(anyhow::anyhow!(
+            Err(_) => Err(anyhow::anyhow!(
                 "Error when calling static method {} in class {} with method signature {}",
                 method.name,
                 class.name,
@@ -128,7 +125,7 @@ impl Mapping {
         let method = class.get_method_by_args(method_name, args)?;
         match env.call_method(instance, &method.name, &method.signature, args) {
             Ok(value) => Ok(value),
-            Err(e) => Err(anyhow::anyhow!(
+            Err(_) => Err(anyhow::anyhow!(
                 "Error when calling method {} in class {} with method signature {}",
                 method.name,
                 class.name,
@@ -148,12 +145,12 @@ impl Mapping {
         let class = self.get_class(class_type.get_name())?;
         let jclass = match env.find_class(&class.name) {
             Ok(jclass) => jclass,
-            Err(e) => return Err(anyhow::anyhow!("{} class not found", class_type.get_name())),
+            Err(_) => return Err(anyhow::anyhow!("{} class not found", class_type.get_name())),
         };
         let field = class.get_field(field_name)?;
         match env.get_static_field(jclass, &field.name, field_type.get_signature()?) {
             Ok(value) => Ok(value),
-            Err(e) => Err(anyhow::anyhow!(
+            Err(_) => Err(anyhow::anyhow!(
                 "Error when getting static field {}",
                 field.name
             )),
@@ -174,7 +171,7 @@ impl Mapping {
 
         match env.get_field(instance, &field.name, field_type.get_signature()?) {
             Ok(value) => Ok(value),
-            Err(e) => Err(anyhow::anyhow!("Error when getting field {}", field.name)),
+            Err(_) => Err(anyhow::anyhow!("Error when getting field {}", field.name)),
         }
     }
 
@@ -192,7 +189,7 @@ impl Mapping {
         let field = class.get_field(field_name)?;
         match env.set_field(instance, &field.name, field_type.get_signature()?, value) {
             Ok(_) => Ok(()),
-            Err(e) => Err(anyhow::anyhow!("Error when setting field {}", field.name)),
+            Err(_) => Err(anyhow::anyhow!("Error when setting field {}", field.name)),
         }
     }
 
