@@ -2,6 +2,7 @@ use crate::client::DarkClient;
 use crate::mapping::class::MinecraftClass;
 use crate::mapping::class_type::MinecraftClassType;
 use crate::mapping::client::minecraft::Minecraft;
+use crate::mapping::minecraft_version::MinecraftVersion;
 use jni::objects::{GlobalRef, JObject, JString, JValue, JValueOwned};
 use jni::JNIEnv;
 use log::error;
@@ -13,6 +14,8 @@ pub mod class_type;
 pub mod client;
 pub mod entity;
 pub mod java;
+mod method;
+mod minecraft_version;
 
 pub trait GameContext {
     fn minecraft(&self) -> &'static Minecraft {
@@ -27,6 +30,7 @@ pub trait GameContext {
 /// Root structure containing all mapped Minecraft classes
 #[derive(Debug, Deserialize)]
 pub struct Mapping {
+    version: MinecraftVersion,
     classes: HashMap<String, MinecraftClass>,
 }
 
@@ -78,6 +82,10 @@ impl Mapping {
 
     fn get_env(&'_ self) -> anyhow::Result<JNIEnv<'_>> {
         Ok(self.get_client().get_env()?)
+    }
+
+    pub fn get_version(&self) -> MinecraftVersion {
+        self.version
     }
 
     pub fn get_class(&self, name: &str) -> anyhow::Result<&MinecraftClass> {

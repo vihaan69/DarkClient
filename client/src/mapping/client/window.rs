@@ -1,3 +1,4 @@
+use crate::mapping::method::MethodName;
 use crate::mapping::{GameContext, Mapping, MinecraftClassType};
 use jni::objects::GlobalRef;
 use jni::sys::jlong;
@@ -33,7 +34,7 @@ impl Window {
             .call_method(
                 MinecraftClassType::Window,
                 self.jni_ref.as_obj(),
-                "getWindow",
+                MethodName::WindowGetWindow.get_name(mapping.get_version()),
                 &[],
             )?
             .j()?)

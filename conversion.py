@@ -294,11 +294,14 @@ def main():
     print("Converting mappings into the data structure...")
     mapping_data = parse_mappings(mappings_text)
 
+    ordered_data = {"version": selected_version}
+    ordered_data.update(mapping_data)
+
     output_filename = 'mappings.json'
     print(f"Writing output to '{output_filename}'...")
     try:
         with open(output_filename, 'w', encoding='utf-8') as f:
-            json.dump(mapping_data, f, indent=4, ensure_ascii=False)
+            json.dump(ordered_data, f, indent=4, ensure_ascii=False)
         print("Operation completed successfully!")
         print(f"The file '{output_filename}' has been created/overwritten for version {selected_version}.")
     except IOError as e:

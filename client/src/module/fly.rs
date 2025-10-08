@@ -27,7 +27,7 @@ impl Module for FlyModule {
         self.module.player.abilities.fly(false)
     }
 
-    fn on_tick(&self) -> anyhow::Result<()>{
+    fn on_tick(&self) -> anyhow::Result<()> {
         // No operation
         Ok(())
     }

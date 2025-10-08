@@ -60,15 +60,25 @@ impl DarkClient {
                 match module.on_tick() {
                     Ok(_) => {}
                     Err(e) => {
-                        error!("Failed to tick module {}, disabling. {}", module.get_module_data().name, e);
+                        error!(
+                            "Failed to tick module {}, disabling. {}",
+                            module.get_module_data().name,
+                            e
+                        );
                         match module.on_stop() {
                             Ok(_) => {}
                             Err(_) => {
-                                error!("Failed to stop module {} after an error when ticking", module.get_module_data().name);
-                                panic!("Failed to stop module {} after an error when ticking", module.get_module_data().name);
+                                error!(
+                                    "Failed to stop module {} after an error when ticking",
+                                    module.get_module_data().name
+                                );
+                                panic!(
+                                    "Failed to stop module {} after an error when ticking",
+                                    module.get_module_data().name
+                                );
                             }
                         }
-                    },
+                    }
                 }
             }
         }
@@ -132,12 +142,20 @@ pub mod keyboard {
                             if enabled {
                                 match module.on_start() {
                                     Ok(_) => {}
-                                    Err(e) => error!("Failed to start module {}: {}", module.get_module_data().name, e),
+                                    Err(e) => error!(
+                                        "Failed to start module {}: {}",
+                                        module.get_module_data().name,
+                                        e
+                                    ),
                                 }
                             } else {
                                 match module.on_stop() {
                                     Ok(_) => {}
-                                    Err(e) => error!("Failed to stop module {}: {}", module.get_module_data().name, e),
+                                    Err(e) => error!(
+                                        "Failed to stop module {}: {}",
+                                        module.get_module_data().name,
+                                        e
+                                    ),
                                 }
                             }
                             module.get_module_data_mut().set_enabled(enabled);
