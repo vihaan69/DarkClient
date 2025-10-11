@@ -17,5 +17,5 @@ ctor = "0.2.8"
 log = "0.4.25"
 simplelog = "0.12.2"
 libloading = "0.8.0"
-jvmti = "0.5.0"
-
+jni = "0.21"
+libc = "0.2"
