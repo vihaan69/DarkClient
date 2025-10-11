@@ -95,6 +95,74 @@ impl Mapping {
         }
     }
 
+    /// Find the real name of a class given his obfuscated name
+    fn find_class_by_obfuscated_name(&self, obfuscated_name: &str) -> Option<&str> {
+        self.classes
+            .iter()
+            .find(|(_, class_data)| class_data.name == obfuscated_name)
+            .map(|(deobfuscated_name, _)| deobfuscated_name.as_str())
+    }
+
+    fn translate_type_descriptor<'a>(&self, descriptor: &mut &'a str) -> String {
+        let mut array_brackets = String::new();
+        while descriptor.starts_with('[') {
+            array_brackets.push_str("[]");
+            *descriptor = &descriptor[1..];
+        }
+
+        let type_name = if let Some(stripped) = descriptor.strip_prefix('L') {
+            if let Some(end_index) = stripped.find(';') {
+                let obfuscated_name = &stripped[..end_index];
+                let deobfuscated_name = self
+                    .find_class_by_obfuscated_name(obfuscated_name)
+                    .unwrap_or(obfuscated_name);
+
+                *descriptor = &stripped[end_index + 1..];
+                deobfuscated_name.to_string()
+            } else {
+                // Malformed, return the rest of the string
+                let rest = descriptor.to_string();
+                *descriptor = "";
+                rest
+            }
+        } else {
+            let (primitive, rest) = descriptor.split_at(1);
+            *descriptor = rest;
+            match primitive {
+                "Z" => "boolean".to_string(),
+                "B" => "byte".to_string(),
+                "C" => "char".to_string(),
+                "S" => "short".to_string(),
+                "I" => "int".to_string(),
+                "J" => "long".to_string(),
+                "F" => "float".to_string(),
+                "D" => "double".to_string(),
+                "V" => "void".to_string(),
+                _ => primitive.to_string(),
+            }
+        };
+
+        format!("{}{}", type_name, array_brackets)
+    }
+
+    fn translate_signature(&self, signature: &str) -> String {
+        if let (Some(params_start), Some(params_end)) = (signature.find('('), signature.find(')')) {
+            let mut params_str = &signature[params_start + 1..params_end];
+            let mut return_type_str = &signature[params_end + 1..];
+
+            let mut translated_params = Vec::new();
+            while !params_str.is_empty() {
+                translated_params.push(self.translate_type_descriptor(&mut params_str));
+            }
+
+            let translated_return = self.translate_type_descriptor(&mut return_type_str);
+
+            format!("({}) -> {}", translated_params.join(", "), translated_return)
+        } else {
+            signature.to_string() // Return the original signature if it's not a valid signature
+        }
+    }
+
     pub fn call_static_method(
         &'_ self,
         class_type: MinecraftClassType,
@@ -106,17 +174,23 @@ impl Mapping {
         let class = self.get_class(class_type.get_name())?;
         let jclass = match env.find_class(&class.name) {
             Ok(jclass) => jclass,
-            Err(_) => return Err(anyhow::anyhow!("{} class not found", class_type.get_name())),
+            Err(_) => return Err(anyhow::anyhow!("Class {} ({}) not found", class_type.get_name(), class.name)),
         };
         let method = class.get_method_by_args(method_name, args)?;
         match env.call_static_method(jclass, &method.name, &method.signature, args) {
             Ok(value) => Ok(value),
-            Err(_) => Err(anyhow::anyhow!(
-                "Error when calling static method {} in class {} with method signature {}",
-                method.name,
-                class.name,
-                method.signature
-            )),
+            Err(_) => {
+                let translated_signature = self.translate_signature(&method.signature);
+                Err(anyhow::anyhow!(
+                    "Error calling static method {} ({}) in class {} ({}) with signature {} ({})",
+                    method_name,
+                    method.name,
+                    class_type.get_name(),
+                    class.name,
+                    translated_signature,
+                    method.signature
+                ))
+            }
         }
     }
 
@@ -133,12 +207,18 @@ impl Mapping {
         let method = class.get_method_by_args(method_name, args)?;
         match env.call_method(instance, &method.name, &method.signature, args) {
             Ok(value) => Ok(value),
-            Err(_) => Err(anyhow::anyhow!(
-                "Error when calling method {} in class {} with method signature {}",
-                method.name,
-                class.name,
-                method.signature
-            )),
+            Err(_) => {
+                let translated_signature = self.translate_signature(&method.signature);
+                Err(anyhow::anyhow!(
+                    "Error calling method {} ({}) in class {} ({}) with signature {} ({})",
+                    method_name,
+                    method.name,
+                    class_type.get_name(),
+                    class.name,
+                    translated_signature,
+                    method.signature
+                ))
+            }
         }
     }
 
@@ -153,15 +233,20 @@ impl Mapping {
         let class = self.get_class(class_type.get_name())?;
         let jclass = match env.find_class(&class.name) {
             Ok(jclass) => jclass,
-            Err(_) => return Err(anyhow::anyhow!("{} class not found", class_type.get_name())),
+            Err(_) => return Err(anyhow::anyhow!("Class {} ({}) not found", class_type.get_name(), class.name)),
         };
         let field = class.get_field(field_name)?;
         match env.get_static_field(jclass, &field.name, field_type.get_signature()?) {
             Ok(value) => Ok(value),
-            Err(_) => Err(anyhow::anyhow!(
-                "Error when getting static field {}",
-                field.name
-            )),
+            Err(_) => {
+                Err(anyhow::anyhow!(
+                    "Error getting static field {} ({}) from class {} ({})",
+                    field_name,
+                    field.name,
+                    class_type.get_name(),
+                    class.name
+                ))
+            }
         }
     }
 
@@ -179,7 +264,15 @@ impl Mapping {
 
         match env.get_field(instance, &field.name, field_type.get_signature()?) {
             Ok(value) => Ok(value),
-            Err(_) => Err(anyhow::anyhow!("Error when getting field {}", field.name)),
+            Err(_) => {
+                Err(anyhow::anyhow!(
+                    "Error getting field {} ({}) from class {} ({})",
+                    field_name,
+                    field.name,
+                    class_type.get_name(),
+                    class.name
+                ))
+            }
         }
     }
 
@@ -197,7 +290,15 @@ impl Mapping {
         let field = class.get_field(field_name)?;
         match env.set_field(instance, &field.name, field_type.get_signature()?, value) {
             Ok(_) => Ok(()),
-            Err(_) => Err(anyhow::anyhow!("Error when setting field {}", field.name)),
+            Err(_) => {
+                Err(anyhow::anyhow!(
+                    "Error setting field {} ({}) in class {} ({})",
+                    field_name,
+                    field.name,
+                    class_type.get_name(),
+                    class.name
+                ))
+            }
         }
     }
 
