@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex, OnceLock, RwLock};
 #[derive(Debug)]
 pub struct DarkClient {
     pub(crate) jvm: Arc<JavaVM>,
-    modules: Arc<RwLock<HashMap<String, Arc<Mutex<ModuleType>>>>>,
+    pub(crate) modules: Arc<RwLock<HashMap<String, Arc<Mutex<ModuleType>>>>>,
 }
 
 impl DarkClient {

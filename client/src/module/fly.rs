@@ -1,5 +1,10 @@
 use crate::mapping::entity::player::LocalPlayer;
-use crate::module::{FlyModule, KeyboardKey, Module, ModuleCategory, ModuleData};
+use crate::module::{KeyboardKey, Module, ModuleCategory, ModuleData, ModuleSetting};
+
+#[derive(Debug)]
+pub struct FlyModule {
+    pub module: ModuleData,
+}
 
 impl FlyModule {
     pub fn new(player: LocalPlayer) -> Self {
@@ -11,8 +16,21 @@ impl FlyModule {
                 key_bind: KeyboardKey::KeyF,
                 enabled: false,
                 player,
+                settings: vec![ModuleSetting::Slider {
+                    name: "Speed".to_string(),
+                    value: 1.0,
+                    min: 0.1,
+                    max: 5.0,
+                }],
             },
         }
+    }
+
+    pub fn get_speed(&self) -> f32 {
+        self.module
+            .get_setting("Speed")
+            .and_then(|s| s.get_slider_value())
+            .unwrap_or(1.0)
     }
 }
 

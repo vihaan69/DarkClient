@@ -40,6 +40,7 @@ pub struct ModuleData {
     pub key_bind: KeyboardKey,
     pub enabled: bool,
     pub player: LocalPlayer,
+    pub settings: Vec<ModuleSetting>,
 }
 
 #[allow(dead_code)]
@@ -66,9 +67,54 @@ pub enum ModuleSetting {
     },
 }
 
+impl ModuleSetting {
+    pub fn name(&self) -> &str {
+        match self {
+            ModuleSetting::Toggle { name, .. } => name,
+            ModuleSetting::Slider { name, .. } => name,
+            ModuleSetting::Choice { name, .. } => name,
+            ModuleSetting::Color { name, .. } => name,
+        }
+    }
+
+    pub fn get_slider_value(&self) -> Option<f32> {
+        match self {
+            ModuleSetting::Slider { value, .. } => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn set_slider_value(&mut self, new_value: f32) {
+        if let ModuleSetting::Slider { value, .. } = self {
+            *value = new_value;
+        }
+    }
+
+    pub fn get_toggle_value(&self) -> Option<bool> {
+        match self {
+            ModuleSetting::Toggle { value, .. } => Some(*value),
+            _ => None,
+        }
+    }
+
+    pub fn set_toggle_value(&mut self, new_value: bool) {
+        if let ModuleSetting::Toggle { value, .. } = self {
+            *value = new_value;
+        }
+    }
+}
+
 impl ModuleData {
     pub fn set_enabled(&mut self, enabled: bool) {
         self.enabled = enabled;
+    }
+
+    pub fn get_setting_mut(&mut self, name: &str) -> Option<&mut ModuleSetting> {
+        self.settings.iter_mut().find(|s| s.name() == name)
+    }
+
+    pub fn get_setting(&self, name: &str) -> Option<&ModuleSetting> {
+        self.settings.iter().find(|s| s.name() == name)
     }
 }
 
@@ -79,11 +125,6 @@ pub trait Module: Debug + Send + Sync {
 
     fn get_module_data(&self) -> &ModuleData;
     fn get_module_data_mut(&mut self) -> &mut ModuleData;
-}
-
-#[derive(Debug)]
-pub struct FlyModule {
-    pub module: ModuleData,
 }
 
 // lwjgl key mapping
