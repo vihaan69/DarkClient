@@ -3,8 +3,6 @@ extern crate log;
 extern crate simplelog;
 
 use ctor::*;
-use jvmti::agent::Agent;
-use jvmti::native::jvmti_native::{jsize, JNI_GetCreatedJavaVMs, JavaVM};
 use libloading::{Library, Symbol};
 use log::{error, info, LevelFilter};
 use simplelog::{Config, WriteLogger};
@@ -16,10 +14,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
 use std::time::Duration;
 use std::{path, thread};
+use jni::JavaVM;
+use jni::sys::{jsize, JNI_GetCreatedJavaVMs, JNI_OK};
 
 // Global variable to keep track of the loaded library
 static CLIENT_LIBRARY: OnceLock<Mutex<Option<Library>>> = OnceLock::new();
 static RUNNING: AtomicBool = AtomicBool::new(true);
+static JVM_MONITOR: OnceLock<thread::JoinHandle<()>> = OnceLock::new();
 
 // Function called when the agent is loaded
 #[no_mangle]
@@ -38,37 +39,14 @@ fn agent_onload() {
     // Initialize the global variable for the library
     CLIENT_LIBRARY.get_or_init(|| Mutex::new(None));
 
-    unsafe {
-        if let Err(e) = register_agent() {
-            error!("Failed to register agent: {}", e);
-            return;
-        }
-    }
+    // Setup signal handlers for clean shutdown
+    setup_signal_handlers();
+
+    // Start monitoring the JVM
+    start_jvm_monitor();
 
     // Start the socket server for commands
     start_command_server();
-}
-
-unsafe fn register_agent() -> Result<(), &'static str> {
-    let mut java_vm: *mut JavaVM = std::ptr::null_mut();
-    let mut count: jsize = 0;
-
-    if JNI_GetCreatedJavaVMs(&mut java_vm, 1, &mut count) != 0 || count == 0 {
-        return Err("Failed to get Java VMs");
-    }
-
-    let mut agent = Agent::new(java_vm);
-
-    agent.on_vm_death(Some(on_vm_death));
-
-    agent.update();
-
-    Ok(())
-}
-
-fn on_vm_death() {
-    info!("VM is shutting down");
-    agent_onunload();
 }
 
 // Function called when the agent is unloaded
@@ -85,6 +63,122 @@ fn agent_onunload() {
     if let Some(mut guard) = CLIENT_LIBRARY.get().and_then(|m| m.lock().ok()) {
         *guard = None;
     }
+}
+
+// Setup signal handlers to detect process termination
+fn setup_signal_handlers() {
+    use std::sync::atomic::AtomicBool;
+
+    static SIGNAL_HANDLER_INSTALLED: AtomicBool = AtomicBool::new(false);
+
+    if SIGNAL_HANDLER_INSTALLED.swap(true, Ordering::SeqCst) {
+        return; // Already installed
+    }
+
+    #[cfg(unix)]
+    {
+        extern "C" fn handle_signal(_: libc::c_int) {
+            info!("Received termination signal - cleaning up");
+            agent_onunload();
+            std::process::exit(0);
+        }
+
+        unsafe {
+            libc::signal(libc::SIGTERM, handle_signal as libc::sighandler_t);
+            libc::signal(libc::SIGINT, handle_signal as libc::sighandler_t);
+        }
+
+        info!("Signal handlers installed");
+    }
+}
+
+// Monitor the JVM status with multiple detection methods
+fn start_jvm_monitor() {
+    let handle = thread::spawn(|| {
+        info!("JVM monitor thread started");
+
+        // Wait for JVM to be available
+        let jvm = loop {
+            if !RUNNING.load(Ordering::SeqCst) {
+                return;
+            }
+
+            match get_jvm() {
+                Some(vm) => break vm,
+                None => {
+                    thread::sleep(Duration::from_millis(500));
+                }
+            }
+        };
+
+        info!("JVM detected, monitoring started");
+
+        // Monitor JVM health with multiple checks
+        let mut consecutive_failures = 0;
+        let max_failures = 3;
+
+        while RUNNING.load(Ordering::SeqCst) {
+            thread::sleep(Duration::from_millis(500));
+
+            // Method 1: Try to attach to the JVM
+            let attach_ok = jvm.attach_current_thread_as_daemon().is_ok();
+
+            // Method 2: Check if we can access Java classes
+            let classes_ok = if attach_ok {
+                if let Ok(mut env) = jvm.attach_current_thread_as_daemon() {
+                    env.find_class("java/lang/System").is_ok()
+                } else {
+                    false
+                }
+            } else {
+                false
+            };
+
+            // Method 3: Check if the JVM pointer is still valid
+            let jvm_valid = {
+                let jvm_ptr = jvm.get_java_vm_pointer();
+                !jvm_ptr.is_null()
+            };
+
+            if !attach_ok || !classes_ok || !jvm_valid {
+                consecutive_failures += 1;
+                info!(
+                    "JVM health check failed ({}/{}): attach={}, classes={}, valid={}",
+                    consecutive_failures, max_failures, attach_ok, classes_ok, jvm_valid
+                );
+
+                if consecutive_failures >= max_failures {
+                    info!("JVM appears to be shutting down or dead");
+                    on_vm_death();
+                    break;
+                }
+            } else {
+                consecutive_failures = 0;
+            }
+        }
+
+        info!("JVM monitor thread stopped");
+    });
+
+    JVM_MONITOR.set(handle).ok();
+}
+
+fn get_jvm() -> Option<JavaVM> {
+    unsafe {
+        let mut java_vm: *mut jni::sys::JavaVM = std::ptr::null_mut();
+        let mut count: jsize = 0;
+
+        if JNI_GetCreatedJavaVMs(&mut java_vm, 1, &mut count) != JNI_OK || count == 0 {
+            return None;
+        }
+
+        JavaVM::from_raw(java_vm).ok()
+    }
+}
+
+fn on_vm_death() {
+    info!("VM death detected - initiating cleanup");
+    agent_onunload();
 }
 
 // Function to load the client library
@@ -183,7 +277,8 @@ fn reload_client_library(lib_path: &str) -> Result<(), Box<dyn std::error::Error
 
     // Temporary file name
     let temp_filename = format!("temp_{}_{}", timestamp, filename);
-    let temp_path = PathBuf::from(&temp_filename);
+    let mut temp_path = std::env::temp_dir();
+    temp_path.push(&temp_filename);
 
     // Copy the file
     std::fs::copy(&client_path, &temp_path)?;

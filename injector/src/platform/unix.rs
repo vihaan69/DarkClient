@@ -7,34 +7,39 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use std::{path, thread};
+use ptrace_inject::{Injector, Process};
 
 pub fn inject(pid: u32) -> Result<(), Error> {
     // First time: load the agent_loader
     let loader_path = PathBuf::from(format!("{}.so", AGENT_NAME));
     let lib_path = PathBuf::from(format!("{}.so", LIBRARY_NAME));
 
-    // Check if agent_loader is already loaded
-    if !find_library(pid, "agent_loader") {
+    if !find_library(pid, format!("{}.so", AGENT_NAME).as_str()) {
         info!("Loading Agent Loader");
 
-        // Load agent_loader via JVMTI
-        match Command::new("jcmd")
-            .arg(pid.to_string())
-            .arg("JVMTI.agent_load")
-            .arg(format!("{:?}", path::absolute(&loader_path)?))
-            .output()
-        {
-            Ok(output) if output.status.success() => {
-                info!("Agent Loader loaded via jcmd: {:?}", loader_path);
+        let proc = match Process::get(pid) {
+            Ok(p) => p,
+            Err(e) => {
+                error!("Failed to get Process for pid {}: {:?}", pid, e);
+                return Err(Error::new(std::io::ErrorKind::Other, format!("Process::get failed: {:?}", e)));
             }
-            Ok(output) => {
-                error!(
-                    "jcmd failed (stderr): {}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
+        };
+
+        match Injector::attach(proc) {
+            Ok(mut injector) => {
+                match injector.inject(&loader_path) {
+                    Ok(_) => {
+                        info!("Successfully injected library: {}", loader_path.to_string_lossy());
+                    }
+                    Err(e) => {
+                        error!("Injection failed: {:?}", e);
+                        return Err(Error::new(std::io::ErrorKind::Other, e.to_string()));
+                    }
+                }
             }
             Err(e) => {
-                error!("Unable to execute jcmd: {:?}", e);
+                error!("Failed to attach to pid {}: {:?}", pid, e);
+                return Err(Error::new(std::io::ErrorKind::Other, e.to_string()));
             }
         }
 
@@ -131,13 +136,14 @@ pub fn find_pid() -> Option<u32> {
 fn find_library(pid: u32, lib_name: &str) -> bool {
     let maps = get_process_maps(pid as i32).ok();
     if maps.is_none() {
+        error!("Failed to get process maps");
         return false;
     }
     let maps = maps.unwrap();
 
     for map in maps {
         if let Some(path) = map.filename() {
-            if path.ends_with(format!("{}.so", lib_name)) {
+            if path.ends_with(lib_name) {
                 // Library loaded
                 return true;
             }
