@@ -277,7 +277,8 @@ fn reload_client_library(lib_path: &str) -> Result<(), Box<dyn std::error::Error
 
     // Temporary file name
     let temp_filename = format!("temp_{}_{}", timestamp, filename);
-    let temp_path = PathBuf::from(&temp_filename);
+    let mut temp_path = std::env::temp_dir();
+    temp_path.push(&temp_filename);
 
     // Copy the file
     std::fs::copy(&client_path, &temp_path)?;
