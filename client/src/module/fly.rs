@@ -20,7 +20,7 @@ impl FlyModule {
                     name: "Speed".to_string(),
                     value: 1.0,
                     min: 0.1,
-                    max: 5.0,
+                    max: 3.0,
                 }],
             },
         }
