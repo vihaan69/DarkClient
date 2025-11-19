@@ -14,7 +14,7 @@ impl FlyModule {
                 description: "Enables flying".to_string(),
                 category: ModuleCategory::MOVEMENT,
                 key_bind: KeyboardKey::KeyF,
-                enabled: false,
+                enabled: true,
                 player,
                 settings: vec![ModuleSetting::Slider {
                     name: "Speed".to_string(),
